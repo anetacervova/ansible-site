@@ -6,3 +6,5 @@
 ---
 - name: Configure bard server
   ansible.builtin.import_playbook: playbooks/cowsay.yml
+- name: Manage users on bard
+  ansible.builtin.import_playbook: playbooks/users.yml

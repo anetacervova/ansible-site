@@ -1,0 +1,5 @@
+---
+user_name: smisek
+
+user_ssh_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK6O1RvhJll1nrZ47d4IrNsvd68eqLfJ/c+lylMF1Nb0 cervo@Aneta"
