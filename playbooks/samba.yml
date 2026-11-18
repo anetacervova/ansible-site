@@ -1,0 +1,93 @@
+
+---
+- name: Configure Samba server on bard
+  hosts: bard
+  become: true
+
+  tasks:
+    - name: Install Samba and SELinux utilities
+      ansible.builtin.package:
+        name:
+          - samba
+          - samba-common-tools
+          - samba-client
+          - policycoreutils-python-utils
+        state: present
+
+    - name: Create Samba group
+      ansible.builtin.group:
+        name: "{{ samba_group }}"
+        state: present
+
+    - name: Create Samba user
+      ansible.builtin.user:
+        name: "{{ samba_user }}"
+        group: "{{ samba_group }}"
+        system: true
+        create_home: false
+        home: /nonexistent
+        shell: /sbin/nologin
+        password_lock: true
+        state: present
+
+    - name: Create Samba share directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ samba_user }}"
+        group: "{{ samba_group }}"
+        mode: "2770"
+      loop: "{{ samba_shares }}"
+
+    - name: Configure SELinux context for Samba shares
+      community.general.sefcontext:
+        target: "{{ item.path }}(/.*)?"
+        setype: samba_share_t
+        state: present
+      loop: "{{ samba_shares }}"
+      notify: Restore SELinux contexts
+
+    - name: Start and enable firewalld
+      ansible.builtin.service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: Allow Samba through firewall in TUL zone
+      ansible.posix.firewalld:
+        service: samba
+        zone: "{{ samba_firewall_zone }}"
+        permanent: true
+        immediate: true
+        state: enabled
+
+    - name: Deploy Samba configuration
+      ansible.builtin.template:
+        src: ../templates/smb.conf.j2
+        dest: /etc/samba/smb.conf
+        owner: root
+        group: root
+        mode: "0644"
+        validate: "testparm -s %s"
+      notify: Restart Samba
+
+    - name: Enable and start Samba
+      ansible.builtin.service:
+        name: smb
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Restore SELinux contexts
+      ansible.builtin.command:
+        argv:
+          - restorecon
+          - -RF
+          - "{{ item.path }}"
+      loop: "{{ samba_shares }}"
+      changed_when: false
+
+    - name: Restart Samba
+      ansible.builtin.service:
+        name: smb
+        state: restarted

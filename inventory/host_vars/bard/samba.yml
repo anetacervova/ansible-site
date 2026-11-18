@@ -1,0 +1,13 @@
+---
+samba_user: sambauser
+samba_group: sambashare
+
+samba_shares:
+  - name: public
+    path: /srv/samba/public
+    browseable: "yes"
+    read_only: "no"
+    guest_ok: "no"
+    valid_users: "@sambashare"
+
+samba_firewall_zone: home

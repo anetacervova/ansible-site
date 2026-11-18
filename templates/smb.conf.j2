@@ -1,0 +1,14 @@
+[global]
+    workgroup = {{ samba_workgroup | default('WORKGROUP') }}
+    server string = {{ samba_server_string | default('Samba Server') }}
+    security = user
+    map to guest = Never
+
+{% for share in samba_shares %}
+[{{ share.name }}]
+    path = {{ share.path }}
+    browseable = {{ share.browseable }}
+    read only = {{ share.read_only }}
+    guest ok = {{ share.guest_ok }}
+    valid users = {{ share.valid_users }}
+{% endfor %}

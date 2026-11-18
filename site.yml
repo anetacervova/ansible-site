@@ -8,3 +8,5 @@
   ansible.builtin.import_playbook: playbooks/cowsay.yml
 - name: Manage users on bard
   ansible.builtin.import_playbook: playbooks/users.yml
+- name: Configure Samba on bard
+  ansible.builtin.import_playbook: playbooks/samba.yml
