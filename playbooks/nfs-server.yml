@@ -1,0 +1,53 @@
+---
+- name: Configure NFS server on Bard
+  hosts: bard
+  become: true
+
+  tasks:
+    - name: Install NFS server packages
+      ansible.builtin.package:
+        name: nfs-utils
+        state: present
+
+    - name: Create NFS export directory
+      ansible.builtin.file:
+        path: "{{ nfs_export_path }}"
+        state: directory
+        owner: "{{ nfs_owner_uid }}"
+        group: "{{ nfs_owner_gid }}"
+        mode: "2770"
+
+    - name: Configure NFS export
+      ansible.builtin.template:
+        src: ../templates/nfs.exports.j2
+        dest: /etc/exports.d/nfs.exports
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Apply NFS exports
+
+    - name: Start and enable firewalld
+      ansible.builtin.service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: Allow NFSv4 from Gandalf through firewall
+      ansible.posix.firewalld:
+        rich_rule: 'rule family="ipv6" source address="{{ nfs_remote_host }}/128" port port="2049" protocol="tcp" accept'
+        zone: home
+        permanent: true
+        immediate: true
+        state: enabled
+
+    - name: Enable and start NFS server
+      ansible.builtin.service:
+        name: nfs-server
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Apply NFS exports
+      ansible.builtin.command:
+        cmd: exportfs -rav
+      changed_when: true

@@ -1,0 +1,18 @@
+---
+- name: Configure NFS client on Bard
+  hosts: bard
+  become: true
+
+  tasks:
+    - name: Install NFS client packages
+      ansible.builtin.package:
+        name: nfs-utils
+        state: present
+
+    - name: Mount NFS share from Gandalf
+      ansible.posix.mount:
+        src: "[{{ nfs_client_remote_host }}]:/"
+        path: "{{ nfs_client_mount_path }}"
+        fstype: nfs
+        opts: "rw,vers=4,_netdev"
+        state: mounted
